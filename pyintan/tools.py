@@ -6,21 +6,23 @@ import numpy as np
 import os.path as op
 from six import exec_
 
-def fread_QString(f):
-    a = ''
-    length = np.fromfile(f, 'u4', 1)[0]
+def read_qstring(f):
+    length = np.fromfile(f, dtype='uint32', count=1)[0]
+    if length == 0xFFFFFFFF or length == 0:
+        return ''
+    txt = f.read(length).decode('utf-16')
+    return txt
 
-    if hex(length) == '0xffffffff':
-        print('return fread_QString')
-        return
 
-    # convert length from bytes to 16-bit Unicode words
-    length = int(length / 2)
-
-    for ii in range(length):
-        newchar = np.fromfile(f, 'u2', 1)[0]
-        a += newchar.tostring().decode('utf-16')
-    return a
+def read_variable_header(f, header):
+    info = {}
+    for field_name, field_type in header:
+        if field_type == 'QString':
+            field_value = read_qstring(f)
+        else:
+            field_value = np.fromfile(f, dtype=field_type, count=1)[0]
+        info[field_name] = field_value
+    return info
 
 def plural(n):
 
