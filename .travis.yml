@@ -3,11 +3,9 @@ python:
 - '3.6'
 install:
 - pip install .
-- pip install pytest pytest-cov
+- pip install pytest
 script:
-- py.test --cov=./
-after_success:
-- codecov
+- pytest
 deploy:
   provider: pypi
   user: alejoe91
