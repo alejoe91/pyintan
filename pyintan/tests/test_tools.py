@@ -1,20 +1,17 @@
 import pytest
 import numpy as np
-from pyopenephys.tools import *
-
-def test_read_python():
-    pass
+from pyintan.tools import *
 
 def test_clip_anas():
     pass
 
-def test_clip_tracking():
+def test_parse_digital_signal():
     pass
 
-def test_clip_events():
+def test_clip_digital():
     pass
 
-def test_clip_spiketrains():
+def test_clip_stimulation():
     pass
 
 def test_clip_times():
