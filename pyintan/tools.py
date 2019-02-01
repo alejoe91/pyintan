@@ -3,8 +3,7 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import numpy as np
-import os.path as op
-from six import exec_
+import quantities as pq
 
 def read_qstring(f):
     length = np.fromfile(f, dtype='uint32', count=1)[0]
@@ -24,13 +23,13 @@ def read_variable_header(f, header):
         info[field_name] = field_value
     return info
 
+
 def plural(n):
 
     # s = plural(n)
     #
     # Utility function to optionally plurailze words based on the value
     # of n.
-
     if n == 1:
         s = ''
     else:
@@ -38,35 +37,151 @@ def plural(n):
 
     return s
 
-def read_python(path):
-    path = op.realpath(op.expanduser(path))
-    assert op.exists(path)
-    with open(path, 'r') as f:
-        contents = f.read()
-    metadata = {}
-    exec_(contents, {}, metadata)
-    metadata = {k.lower(): v for (k, v) in metadata.items()}
-    return metadata
 
-def get_rising_falling_edges(idx_high):
+def parse_digital_signal(dig, times):
     '''
-    :param idx_high: indeces where dig signal is '1'
-    :return: rising and falling indices lists
+
+    :param dig:
+    :param times:
+    :return:
     '''
-    rising = []
-    falling = []
+    channels = []
+    states = []
+    timestamps = []
+    unit = times.units
+    for i in range(16):
+        idx_i = np.where(dig == 2**i)[0]
+        if len(idx_i) > 0:
+            rising, falling = [], []
+            for id in idx_i:
+                if dig[id - 1] == 0:
+                    rising.append(id)
+                if dig[id + 1] == 0:
+                    falling.append(id)
+            # rising, falling = get_rising_falling_edges(idx_i)
+            channels.append(i)
+            ts = []
+            st = []
+            for (r, f) in zip(rising, falling):
+                ts.append(times[int(r)])
+                st.append(1)
+                ts.append(times[int(f)])
+                st.append(-1)
+            timestamps.append(ts)
+            states.append(st)
 
-    idx_high = idx_high[0]
+    return channels, states, np.array(timestamps) * unit
 
-    if len(idx_high) != 0:
-        for i, idx in enumerate(idx_high[:-1]):
-            if i==0:
-                # first idx is rising
-                rising.append(idx)
-            else:
-                if idx_high[i+1] != idx + 1:
-                    falling.append(idx)
-                if idx - 1 != idx_high[i-1]:
-                    rising.append(idx)
 
-    return rising, falling
+def clip_anas(analog_signals, times, clipping_times, start_end):
+    '''
+
+    Parameters
+    ----------
+    analog_signals
+    times
+    clipping_times
+    start_end
+
+    '''
+    if len(analog_signals.signal) != 0:
+        times = analog_signals.times.rescale(pq.s)
+        if len(clipping_times) == 2:
+            idx = np.where((times > clipping_times[0]) & (times < clipping_times[1]))
+        elif len(clipping_times) ==  1:
+            if start_end == 'start':
+                idx = np.where(times > clipping_times[0])
+            elif start_end == 'end':
+                idx = np.where(times < clipping_times[0])
+        else:
+            raise AttributeError('clipping_times must be of length 1 or 2')
+
+        if len(analog_signals.signal.shape) == 2:
+            analog_signals.signal = analog_signals.signal[:, idx[0]]
+        else:
+            analog_signals.signal = analog_signals.signal[idx[0]]
+        analog_signals.times = times[idx]
+
+
+def clip_digital(events, clipping_times, start_end):
+    '''
+
+    Parameters
+    ----------
+    digital_signals
+    clipping_times
+    start_end
+
+    Returns
+    -------
+
+    '''
+    if len(events.times) != 0:
+        times = events.times.rescale(pq.s)
+        if len(clipping_times) == 2:
+            idx = np.where((times > clipping_times[0]) & (times < clipping_times[1]))
+        elif len(clipping_times) ==  1:
+            if start_end == 'start':
+                idx = np.where(times > clipping_times[0])
+            elif start_end == 'end':
+                idx = np.where(times < clipping_times[0])
+        else:
+            raise AttributeError('clipping_times must be of length 1 or 2')
+        events.times = times[idx]
+        events.channel_states = events.channel_states[idx]
+        events.channels = events.channels[idx]
+
+def clip_times(times, clipping_times, start_end='start'):
+    '''
+
+    Parameters
+    ----------
+    times
+    clipping_times
+    start_end
+
+    Returns
+    -------
+
+    '''
+    times.rescale(pq.s)
+
+    if len(clipping_times) == 2:
+        idx = np.where((times > clipping_times[0]) & (times <= clipping_times[1]))
+    elif len(clipping_times) ==  1:
+        if start_end == 'start':
+            idx = np.where(times >= clipping_times[0])
+        elif start_end == 'end':
+            idx = np.where(times <= clipping_times[0])
+    else:
+        raise AttributeError('clipping_times must be of length 1 or 2')
+    times_clip = times[idx]
+
+    return times_clip
+
+
+def clip_stimulation(stimulation, clipping_times, start_end='start'):
+    '''
+
+    Parameters
+    ----------
+    times
+    clipping_times
+    start_end
+
+    Returns
+    -------
+
+    '''
+    times = stimulation.times.rescale(pq.s)
+    if len(clipping_times) == 2:
+        idx = np.where((times > clipping_times[0]) & (times <= clipping_times[1]))
+    elif len(clipping_times) == 1:
+        if start_end == 'start':
+            idx = np.where(times >= clipping_times[0])
+        elif start_end == 'end':
+            idx = np.where(times <= clipping_times[0])
+    else:
+        raise AttributeError('clipping_times must be of length 1 or 2')
+    stimulation.times = stimulation.times[idx]
+    stimulation.signal = stimulation.signal[idx]
