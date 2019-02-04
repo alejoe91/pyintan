@@ -73,7 +73,7 @@ def parse_digital_signal(dig, times):
     return channels, states, np.array(timestamps) * unit
 
 
-def clip_anas(analog_signals, times, clipping_times, start_end):
+def clip_anas(analog_signals, clipping_times, start_end):
     '''
 
     Parameters

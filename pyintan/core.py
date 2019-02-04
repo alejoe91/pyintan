@@ -117,7 +117,7 @@ class File:
     """
     Class for reading experimental data from an Intan dataset.
     """
-    def __init__(self, filename):
+    def __init__(self, filename, verbose=False):
         self.absolute_filename = op.abspath(filename)
         self.fname = op.split(filename)[-1]
         self.absolute_foldername = op.split(filename)[0]
@@ -198,13 +198,16 @@ class File:
 
         anas_chan = [sig for sig in sig_channels if 'ANALOG' not in sig['name'] and 'STIM' not in sig['name']]
         anas_len = len(anas_chan)
-        print('Found ', anas_len, ' recording channels')
+        if verbose:
+            print('Found ', anas_len, ' recording channels')
         analog_in_chan = [sig for sig in sig_channels if 'ANALOG-IN' in sig['name']]
         analog_in_len = len(analog_in_chan)
-        print('Found ', anas_len, ' analog in channels')
+        if verbose:
+            print('Found ', anas_len, ' analog in channels')
         analog_out_chan = [sig for sig in sig_channels if 'ANALOG-OUT' in sig['name']]
         analog_out_len = len(analog_out_chan)
-        print('Found ', anas_len, ' analog out channels')
+        if verbose:
+            print('Found ', anas_len, ' analog out channels')
 
         anas = np.zeros((i_stop - i_start, anas_len), dtype='float32')
         analog_in = np.zeros((i_stop - i_start, analog_in_len), dtype='float32')
@@ -250,9 +253,11 @@ class File:
             else:
                 digital_in = data_chan[block_start:block_stop].flatten()[sl0:sl1]
             channels_in, states_in, times_in = parse_digital_signal(digital_in, self._times)
-            print('Found ', len(channels_in), ' digital in channels')
+            if verbose:
+                print('Found ', len(channels_in), ' digital in channels')
         except:
-            print('Found  0  digital out channels')
+            if verbose:
+                print('Found  0  digital out channels')
             self._digital_in = None
             channels_in, states_in, times_in = [], [], []
 
@@ -302,9 +307,8 @@ class File:
                     if np.count_nonzero(stim) != 0:
                         stim_channels.append(ch)
                         stim_signals.append(stim)
-
-                print('Found ', len(stim_channels), ' stimulation channels')
-
+                if verbose:
+                    print('Found ', len(stim_channels), ' stimulation channels')
                 # Clear variables
                 del stim_polarity, stim_data
         else:
