@@ -69,8 +69,9 @@ def parse_digital_signal(dig, times):
                 st.append(-1)
             timestamps.append(ts)
             states.append(st)
+    timestamps = [np.array(t) * unit for t in timestamps]
 
-    return channels, states, np.array(timestamps) * unit
+    return channels, states, timestamps
 
 
 def clip_anas(analog_signals, clipping_times, start_end):
