@@ -246,20 +246,20 @@ class File:
                     stim_data[:, i] = data_chan[block_start:block_stop].flatten()[sl0:sl1]
 
         # DIGITAL
-        # try:
-        data_chan = self._raw_data['DIGITAL-IN']
-        if len(shape) == 1:
-            digital_in = data_chan[i_start:i_stop]
-        else:
-            digital_in = data_chan[block_start:block_stop].flatten()[sl0:sl1]
-        channels_in, states_in, times_in = parse_digital_signal(digital_in, self._times)
-        if verbose:
-            print('Found ', len(channels_in), ' digital in channels')
-        # except:
-        #     if verbose:
-        #         print('Found  0  digital in channels')
-        #     self._digital_in = None
-        #     channels_in, states_in, times_in = [], [], []
+        try:
+            data_chan = self._raw_data['DIGITAL-IN']
+            if len(shape) == 1:
+                digital_in = data_chan[i_start:i_stop]
+            else:
+                digital_in = data_chan[block_start:block_stop].flatten()[sl0:sl1]
+            channels_in, states_in, times_in = parse_digital_signal(digital_in, self._times)
+            if verbose:
+                print('Found ', len(channels_in), ' digital in channels')
+        except:
+            if verbose:
+                print('Found  0  digital in channels')
+            self._digital_in = None
+            channels_in, states_in, times_in = [], [], []
 
         # DIGITAL
         try:

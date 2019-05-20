@@ -69,7 +69,10 @@ def parse_digital_signal(dig, times):
                 st.append(-1)
             timestamps.append(ts)
             states.append(st)
-    timestamps = [np.array(t) * unit for t in timestamps]
+
+    channels = np.array(channels)
+    states = np.array(states)
+    timestamps = np.array(timestamps)
 
     return channels, states, timestamps
 
