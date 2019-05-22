@@ -60,19 +60,19 @@ def parse_digital_signal(dig, times):
                     falling.append(id)
             # rising, falling = get_rising_falling_edges(idx_i)
             channels.append(i)
-            ts = []
+            ts_idx = []
             st = []
             for (r, f) in zip(rising, falling):
-                ts.append(times[int(r)])
+                ts_idx.append(int(r))
                 st.append(1)
-                ts.append(times[int(f)])
+                ts_idx.append(int(f))
                 st.append(-1)
-            timestamps.append(ts)
+            timestamps.append(times[ts_idx])
             states.append(st)
 
     channels = np.array(channels)
     states = np.array(states)
-    timestamps = np.array(timestamps)
+    timestamps = timestamps
 
     return channels, states, timestamps
 

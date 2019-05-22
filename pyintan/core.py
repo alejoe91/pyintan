@@ -117,7 +117,7 @@ class File:
     """
     Class for reading experimental data from an Intan dataset.
     """
-    def __init__(self, filename, load_stim=True, verbose=False):
+    def __init__(self, filename, verbose=False):
         self.absolute_filename = op.abspath(filename)
         self.fname = op.split(filename)[-1]
         self.absolute_foldername = op.split(filename)[0]
@@ -268,7 +268,7 @@ class File:
     def digital_in_events(self):
         if self._digin_dirty:
             i_start, i_stop, block_size, block_start, block_stop, sl0, sl1 = self._get_block_info()
-            try:
+            if 'DIGITAL-IN' in self._raw_data.dtype.names:
                 data_chan = self._raw_data['DIGITAL-IN']
                 if len(self._shape) == 1:
                     digital_in = data_chan[i_start:i_stop]
@@ -277,7 +277,7 @@ class File:
                 channels_in, states_in, times_in = parse_digital_signal(digital_in, self._times)
                 if self.verbose:
                     print('Found ', len(channels_in), ' digital in channels')
-            except:
+            else:
                 if self.verbose:
                     print('Found  0  digital in channels')
                 self._digital_in = None
@@ -294,7 +294,7 @@ class File:
     def digital_out_events(self):
         if self._digout_dirty:
             i_start, i_stop, block_size, block_start, block_stop, sl0, sl1 = self._get_block_info()
-            try:
+            if 'DIGITAL-OUT' in self._raw_data.dtype.names:
                 data_chan = self._raw_data['DIGITAL-OUT']
                 if len(self._shape) == 1:
                     digital_out = data_chan[i_start:i_stop]
@@ -303,7 +303,7 @@ class File:
                 channels_out, states_out, times_out = parse_digital_signal(digital_out, self._times)
                 if self.verbose:
                     print('Found ', len(channels_out), ' digital in channels')
-            except:
+            else:
                 if self.verbose:
                     print('Found  0  digital in channels')
                 self._digital_out = None
