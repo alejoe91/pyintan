@@ -6,7 +6,7 @@ entry_points = None
 
 setup(
     name="pyintan",
-    version='0.1.4',
+    version='0.1.5',
     author="Alessio Buccino",
     author_email="alessiob@ifi.uio.no",
     description="Python package for parsing INTAN data.",
