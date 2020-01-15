@@ -41,9 +41,14 @@ def plural(n):
 def parse_digital_signal(dig, times):
     '''
 
-    :param dig:
-    :param times:
-    :return:
+    Parameters
+    ----------
+    dig
+    times
+
+    Returns
+    -------
+
     '''
     channels = []
     states = []
@@ -54,17 +59,20 @@ def parse_digital_signal(dig, times):
         if len(idx_i) > 0:
             rising, falling = [], []
             for id in idx_i:
-                if dig[id - 1] == 0:
-                    rising.append(id)
-                if dig[id + 1] == 0:
-                    falling.append(id)
+                if id - 1 >= 0:
+                    if dig[id - 1] == 0:
+                        rising.append(id)
+                if id + 1 < len(dig):
+                    if dig[id + 1] == 0:
+                        falling.append(id)
             # rising, falling = get_rising_falling_edges(idx_i)
-            channels.append(i)
+            channels.append(int(i))
             ts_idx = []
             st = []
-            for (r, f) in zip(rising, falling):
+            for r in rising:
                 ts_idx.append(int(r))
                 st.append(1)
+            for f in falling:
                 ts_idx.append(int(f))
                 st.append(-1)
             timestamps.append(times[ts_idx])
