@@ -1,12 +1,15 @@
 from setuptools import setup, find_packages
 
+d = {}
+exec(open("pyintan/version.py").read(), None, d)
+version = d['version']
 long_description = open("README.md").read()
 
 entry_points = None
 
 setup(
     name="pyintan",
-    version='0.1.6',
+    version=version,
     author="Alessio Buccino",
     author_email="alessiob@ifi.uio.no",
     description="Python package for parsing INTAN data.",
