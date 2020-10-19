@@ -181,19 +181,20 @@ class File:
         self._size = self._raw_data[self._sig_channels[0]['name']].size
         # some channel (temperature) have 1D field so shape 1D
         # because 1 sample per block
-        self._anas_chan = [sig for sig in self._sig_channels if 'ANALOG' not in sig['name'] and 'STIM' not in sig['name']]
+        self._anas_chan = np.array([sig for sig in self._sig_channels if
+                                    'ANALOG' not in sig['name'] and 'STIM' not in sig['name']])
         anas_len = len(self._anas_chan)
         if self.verbose:
             print('Found ', anas_len, ' recording channels')
-        self._analog_in_chan = [sig for sig in self._sig_channels if 'ANALOG-IN' in sig['name']]
+        self._analog_in_chan = np.array([sig for sig in self._sig_channels if 'ANALOG-IN' in sig['name']])
         analog_in_len = len(self._analog_in_chan)
         if self.verbose:
             print('Found ', analog_in_len, ' analog in channels')
-        self._analog_out_chan = [sig for sig in self._sig_channels if 'ANALOG-OUT' in sig['name']]
+        self._analog_out_chan = np.array([sig for sig in self._sig_channels if 'ANALOG-OUT' in sig['name']])
         analog_out_len = len(self._analog_out_chan)
         if self.verbose:
             print('Found ', analog_out_len, ' analog out channels')
-        self._stim_chan = [sig for sig in self._sig_channels if 'STIM' in sig['name']]
+        self._stim_chan = np.array([sig for sig in self._sig_channels if 'STIM' in sig['name']])
         stim_len = len(self._analog_out_chan)
         if self.verbose:
             print('Found ', stim_len, ' stimulation channels')
@@ -265,9 +266,15 @@ class File:
         return self._analog_out
 
     @property
-    def digital_in_events(self):
+    def digital_in_events(self, i_start=None, i_stop=None):
+        if i_start is None:
+            i_start = 0
+        if i_stop is None:
+            i_stop = self._size
+        if i_stop > self._size:
+            i_stop = self._size
         if self._digin_dirty:
-            i_start, i_stop, block_size, block_start, block_stop, sl0, sl1 = self._get_block_info()
+            block_size, block_start, block_stop, sl0, sl1 = self._get_block_info(i_start, i_stop)
             if 'DIGITAL-IN' in self._raw_data.dtype.names:
                 data_chan = self._raw_data['DIGITAL-IN']
                 if len(self._shape) == 1:
@@ -291,9 +298,15 @@ class File:
         return self._digital_in
 
     @property
-    def digital_out_events(self):
+    def digital_out_events(self, i_start=None, i_stop=None):
+        if i_start is None:
+            i_start = 0
+        if i_stop is None:
+            i_stop = self._size
+        if i_stop > self._size:
+            i_stop = self._size
         if self._digout_dirty:
-            i_start, i_stop, block_size, block_start, block_stop, sl0, sl1 = self._get_block_info()
+            block_size, block_start, block_stop, sl0, sl1 = self._get_block_info(i_start, i_stop)
             if 'DIGITAL-OUT' in self._raw_data.dtype.names:
                 data_chan = self._raw_data['DIGITAL-OUT']
                 if len(self._shape) == 1:
@@ -371,39 +384,49 @@ class File:
     def times(self):
         return self._times
 
-    def _get_block_info(self):
+    def _get_block_info(self, i_start=None, i_stop=None):
+        if i_start is None:
+            i_start = 0
+        if i_stop is None:
+            i_stop = self._size
+        if i_stop > self._size:
+            i_stop = self._size
         if len(self._shape) == 2:
             # this is the general case with 2D
             block_size = self._shape[1]
             block_start = 0
             block_stop = self._size // block_size + 1
-            i_start = 0
-            i_stop = self._size
 
             sl0 = i_start % block_size
             sl1 = sl0 + (i_stop - i_start)
         else:
-            i_start = 0
-            i_stop = self._size
             block_size = None
             block_start = None
             block_stop = None
             sl0 = None
             sl1 = None
 
-        return i_start, i_stop, block_size, block_start, block_stop, sl0, sl1
+        return block_size, block_start, block_stop, sl0, sl1
 
-    def _read_analog(self, chan):
-        i_start, i_stop, block_size, block_start, block_stop, sl0, sl1 = self._get_block_info()
-        anas = np.zeros((i_stop - i_start, len(chan)), dtype='float32')
+    # add i_start, i_stop and call this directly from SI
+    def _read_analog(self, channels=None, i_start=None, i_stop=None):
+        if i_start is None:
+            i_start = 0
+        if i_stop is None:
+            i_stop = self._size
+        if i_stop > self._size:
+            i_stop = self._size
+        if channels is None:
+            channels = self._anas_chan
+        block_size, block_start, block_stop, sl0, sl1 = self._get_block_info(i_start, i_stop)
+        anas = np.zeros((i_stop - i_start, len(channels)), dtype='float32')
 
-        for i, ch in enumerate(chan):
+        for i, ch in enumerate(channels):
             data_chan = self._raw_data[ch['name']]
             if len(self._shape) == 1:
                 anas[:, i] = data_chan[i_start:i_stop] * ch['gain'] + ch['offset']
             else:
                 anas[:, i] = data_chan[block_start:block_stop].flatten()[sl0:sl1] * ch['gain'] + ch['offset']
-
         return anas
 
     def clip_recording(self, clipping_times, start_end='start'):
