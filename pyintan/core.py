@@ -409,7 +409,8 @@ class File:
         return block_size, block_start, block_stop, sl0, sl1
 
     # add i_start, i_stop and call this directly from SI
-    def _read_analog(self, channels=None, i_start=None, i_stop=None):
+    def _read_analog(self, channels=None, i_start=None, i_stop=None, dtype='float'):
+        assert dtype in ['float', 'uint16'], "'dtype' can be either 'float' or 'uint16'"
         if i_start is None:
             i_start = 0
         if i_stop is None:
@@ -419,14 +420,23 @@ class File:
         if channels is None:
             channels = self._anas_chan
         block_size, block_start, block_stop, sl0, sl1 = self._get_block_info(i_start, i_stop)
-        anas = np.zeros((i_stop - i_start, len(channels)), dtype='float32')
+        if dtype == 'float':
+            anas = np.zeros((i_stop - i_start, len(channels)), dtype='float32')
+        else:
+            anas = np.zeros((i_stop - i_start, len(channels)), dtype='uint16')
 
         for i, ch in enumerate(channels):
             data_chan = self._raw_data[ch['name']]
             if len(self._shape) == 1:
-                anas[:, i] = data_chan[i_start:i_stop] * ch['gain'] + ch['offset']
+                if dtype == 'float':
+                    anas[:, i] = data_chan[i_start:i_stop] * ch['gain'] + ch['offset']
+                else:
+                    anas[:, i] = data_chan[i_start:i_stop]
             else:
-                anas[:, i] = data_chan[block_start:block_stop].flatten()[sl0:sl1] * ch['gain'] + ch['offset']
+                if dtype == 'float':
+                    anas[:, i] = data_chan[block_start:block_stop].flatten()[sl0:sl1] * ch['gain'] + ch['offset']
+                else:
+                    anas[:, i] = data_chan[block_start:block_stop].flatten()[sl0:sl1]
         return anas
 
     def clip_recording(self, clipping_times, start_end='start'):
