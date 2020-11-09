@@ -410,6 +410,7 @@ class File:
 
     # add i_start, i_stop and call this directly from SI
     def _read_analog(self, channels=None, i_start=None, i_stop=None, dtype='float'):
+        assert dtype in ['float', 'uint16'], "'dtype' can be either 'float' or 'uint16'"
         if i_start is None:
             i_start = 0
         if i_stop is None:
@@ -419,7 +420,10 @@ class File:
         if channels is None:
             channels = self._anas_chan
         block_size, block_start, block_stop, sl0, sl1 = self._get_block_info(i_start, i_stop)
-        anas = np.zeros((i_stop - i_start, len(channels)), dtype='float32')
+        if dtype == 'float':
+            anas = np.zeros((i_stop - i_start, len(channels)), dtype='float32')
+        else:
+            anas = np.zeros((i_stop - i_start, len(channels)), dtype='uint16')
 
         for i, ch in enumerate(channels):
             data_chan = self._raw_data[ch['name']]
