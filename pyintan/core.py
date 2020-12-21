@@ -410,7 +410,7 @@ class File:
 
     # add i_start, i_stop and call this directly from SI
     def _read_analog(self, channels=None, i_start=None, i_stop=None, dtype='float'):
-        assert dtype in ['float', 'uint16'], "'dtype' can be either 'float' or 'uint16'"
+        assert dtype in ['float', 'int16', 'uint16'], "'dtype' can be either 'float', 'int16', or 'uint16'"
         if i_start is None:
             i_start = 0
         if i_stop is None:
@@ -422,6 +422,8 @@ class File:
         block_size, block_start, block_stop, sl0, sl1 = self._get_block_info(i_start, i_stop)
         if dtype == 'float':
             anas = np.zeros((i_stop - i_start, len(channels)), dtype='float32')
+        elif dtype == 'int16':
+            anas = np.zeros((i_stop - i_start, len(channels)), dtype='int16')
         else:
             anas = np.zeros((i_stop - i_start, len(channels)), dtype='uint16')
 
@@ -430,11 +432,21 @@ class File:
             if len(self._shape) == 1:
                 if dtype == 'float':
                     anas[:, i] = data_chan[i_start:i_stop] * ch['gain'] + ch['offset']
+                elif dtype == 'int16':
+                    offset = ch['offset'] / ch['gain']
+                    assert offset.is_integer(), "Native offset and gain are unable to be coerced into int16! " \
+                        "Please choose a different dtype."
+                    anas[:, i] = (data_chan[i_start:i_stop] + int(offset)).astype(dtype)
                 else:
                     anas[:, i] = data_chan[i_start:i_stop]
             else:
                 if dtype == 'float':
                     anas[:, i] = data_chan[block_start:block_stop].flatten()[sl0:sl1] * ch['gain'] + ch['offset']
+                elif dtype == 'int16':
+                    offset = ch['offset'] / ch['gain']
+                    assert offset.is_integer(), "Native offset and gain are unable to be coerced into int16! " \
+                        "Please choose a different dtype."
+                    anas[:, i] = (data_chan[block_start:block_stop].flatten()[sl0:sl1] + int(offset)).astype(dtype)
                 else:
                     anas[:, i] = data_chan[block_start:block_stop].flatten()[sl0:sl1]
         return anas
