@@ -15,6 +15,7 @@ import numpy as np
 from datetime import datetime
 import locale
 import platform
+import warnings
 
 from .tools import parse_digital_signal, clip_anas, clip_digital, clip_times, clip_stimulation
 from .intan import read_rhd, read_rhs
@@ -124,7 +125,6 @@ class File:
         self.verbose = verbose
 
         fname = op.split(filename)[-1]
-        under_date = fname[:-4].split('_')[-2:]
         # read date in US format
         if platform.system() == 'Windows':
             locale.setlocale(locale.LC_ALL, 'english')
@@ -136,7 +136,12 @@ class File:
                 pass
         else:
             locale.setlocale(locale.LC_ALL, 'en_US.UTF8')
-        self._start_datetime = datetime.strptime(under_date[0] + under_date[1], '%y%m%d%H%M%S')
+        try:
+            under_date = fname[:-4].split('_')[-2:]
+            self._start_datetime = datetime.strptime(under_date[0] + under_date[1], '%y%m%d%H%M%S')
+        except Exception as e:
+            warnings.warn(f"Could not parse date from {fname}")
+            self._start_datetime = datetime.now()
 
         header_size = 0
         data_dtype = None
@@ -394,8 +399,8 @@ class File:
         if len(self._shape) == 2:
             # this is the general case with 2D
             block_size = self._shape[1]
-            block_start = 0
-            block_stop = self._size // block_size + 1
+            block_start = i_start // block_size
+            block_stop = i_stop // block_size + 1
 
             sl0 = i_start % block_size
             sl1 = sl0 + (i_stop - i_start)
